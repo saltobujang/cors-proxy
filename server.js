@@ -8,39 +8,59 @@ const port = process.env.PORT || 3000;
 // Enable CORS for all incoming requests
 app.use(cors());
 
-// Define the CORS proxy route
+// Proxy route
 app.get('/proxy', async (req, res) => {
     const targetUrl = req.query.targetUrl;
 
-    // Check if the targetUrl query parameter is provided
     if (!targetUrl) {
         return res.status(400).send('Missing targetUrl query parameter');
     }
 
     try {
-        // Use Axios to fetch the content of the target URL
+        // Use Axios to make the request
         const response = await axios.get(targetUrl, {
             headers: {
-                'User-Agent': 'Mozilla/5.0', // Pretend to be a browser
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.5'
-            }
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': '*/*',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache',
+                'Connection': 'keep-alive',
+            },
+            responseType: 'text', // Ensure the response is treated as plain text
         });
 
-        // Return the fetched content
+        // Set headers to mimic `cors-anywhere`
+        res.set({
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+            'Access-Control-Expose-Headers': 'Content-Length, Content-Type',
+        });
+
+        // Return the response
         res.status(response.status).send(response.data);
     } catch (error) {
         console.error('Error fetching target URL:', error.message);
-        res.status(500).send('Error fetching target URL'); // Send error response
+
+        // Forward the error response if available
+        if (error.response) {
+            return res
+                .status(error.response.status)
+                .send(`Error: ${error.response.statusText}`);
+        }
+
+        // Default error response
+        res.status(500).send('Internal Server Error');
     }
 });
 
-// Health check route for testing the proxy
+// Health check route
 app.get('/', (req, res) => {
     res.send('CORS Proxy is running. Use /proxy?targetUrl={URL} to fetch data.');
 });
 
-// Start the server and listen on the assigned port
+// Start the server
 app.listen(port, () => {
     console.log(`CORS Proxy is running on port ${port}`);
 });
