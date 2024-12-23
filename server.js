@@ -1,32 +1,24 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
-const puppeteer = require('puppeteer'); // Uncomment if you want to handle dynamic content
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Enable CORS for all requests
+// Enable CORS for all incoming requests
 app.use(cors());
 
-// Proxy route for fetching static or dynamic content
+// Define the CORS proxy route
 app.get('/proxy', async (req, res) => {
     const targetUrl = req.query.targetUrl;
 
+    // Check if the targetUrl query parameter is provided
     if (!targetUrl) {
         return res.status(400).send('Missing targetUrl query parameter');
     }
 
     try {
-        // Uncomment this section to handle dynamic content with Puppeteer
-        // const browser = await puppeteer.launch({ headless: true });
-        // const page = await browser.newPage();
-        // await page.goto(targetUrl, { waitUntil: 'networkidle2' });
-        // const content = await page.content();
-        // await browser.close();
-        // return res.send(content);
-
-        // Handle static content with Axios
+        // Use Axios to fetch the content of the target URL
         const response = await axios.get(targetUrl, {
             headers: {
                 'User-Agent': 'Mozilla/5.0', // Pretend to be a browser
@@ -35,20 +27,20 @@ app.get('/proxy', async (req, res) => {
             }
         });
 
-        // Return the response from the target URL
+        // Return the fetched content
         res.status(response.status).send(response.data);
     } catch (error) {
         console.error('Error fetching target URL:', error.message);
-        res.status(500).send('Error fetching target URL');
+        res.status(500).send('Error fetching target URL'); // Send error response
     }
 });
 
-// Health check route
+// Health check route for testing the proxy
 app.get('/', (req, res) => {
     res.send('CORS Proxy is running. Use /proxy?targetUrl={URL} to fetch data.');
 });
 
-// Start the server
+// Start the server and listen on the assigned port
 app.listen(port, () => {
     console.log(`CORS Proxy is running on port ${port}`);
 });
